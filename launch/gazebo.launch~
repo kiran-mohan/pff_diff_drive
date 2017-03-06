@@ -1,0 +1,46 @@
+<launch>
+
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  <arg name="model" default="$(find pff_diff_drive)/urdf/pff_diff_drive.urdf"/>
+
+  <arg name="key_teleop" default="false"/>
+  <arg name="circle_switch" default="false"/>
+  <arg name="square_switch" default="false"/>
+  <arg name="diameter" default="1.0"/>
+  <arg name="side" default="1.0"/>
+
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="headless" value="$(arg headless)"/>
+  </include>
+
+  <param name="robot_description" command="$(find xacro)/xacro.py $(arg model)" />
+
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
+        args="-z 1.0 -unpause -urdf -model robot -param robot_description" respawn="false" output="screen"/>
+
+  <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="30.0" />
+  </node>
+
+  <node pkg="pff_diff_drive" type="keyboard_teleop.py" name="keyboard_teleop" launch-prefix="xterm -e" if="$(arg key_teleop)"/>
+  
+  <node pkg="pff_diff_drive" type="drive_in_circles.py" name="drive_in_circles" if="$(arg circle_switch)">
+    <param name="diameter" type="double" value="$(arg diameter)"/>
+  </node>
+
+  <node pkg="pff_diff_drive" type="drive_in_squares.py" name="drive_in_squares" if="$(arg square_switch)">
+    <param name="side" type="double" value="$(arg side)"/>
+  </node>
+
+</launch>
